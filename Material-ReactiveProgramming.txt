@@ -426,20 +426,379 @@ Functional style principles:
 
 
 
+-Pure function
+
+  function which takes parameter, returns the same as it is
+  function which wants to return new data , dont modify the data , rather 
+  creates new of copy of the data , return that
+
+ -Immutablity
+    Dont override the same memory location,rather creates copy of that memory and
+	return that.
+
+-function composition :-High Order function   
+
+ -Functions can be passed as parameters 
+ -Functions can be returned as a result
+ -Separation of responsibilities (separation of Concerns)
+ -Patterns: Execute-Around, Deferred Execution, Decorator, Strategy, Template      Method
+
+ newFunction =  func1 + func2
+
+4.declarative  --->imperative
+
+   eg: HTML
+
+Java declarative Programming:
+............................
+
+Java supports declarative programming through "functional Abstraction".
+
+java supports collection processing declaratively via "Streams"
+
+
+Streams:
+  Functional abstraction , more declarative , data Processing.
+
+  Eg:
+  List.stream().map().filter(condition).collect()
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Reactive programming is more declarative,functional,oo,event driven programming model.
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+How to start?
+
+*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Java and Reactive Programming:
+
+1.Rxjava 1.x
+2.Rxjava 2 and 3
+3.Project Reactor -- alternate to Rxjava -Pivtol implementation.
+             largly used in side spring 5.....
+
+
+Publisher and Subscriber:
+.........................
+
+->how to create these objects
+->how to send data
+->how to process data.
+
+Terminallogy:
+
+1.Stream:
+  Logical flow of data.
+ ->Up stream
+ ->down stream
+
+Objects in Rxjava:
+
+Publisher:
+
+1.Observable
+2.Subject
+3.Single
+4.Maybe
+5.Completeable
+6.Flowable
+
+Subscriber
+ Subscriber
+
+Object =  methods =>for data processing: Operators:
+..................................................
+
+2.Operators
+
+ Operators are in general methods.
+
+operators are used to create,process stream.
+
+-operators are designed based on functional programming concepts and implementation.
+
+functional programming concepts behind operators:
+
+1.pure function
+
+1.1.pure function it is funcation, takes input, dont modify that input with internal state and return same.
+
+   function  myfun(arg){
+          return arg;
+   }
+
+  myfun(10);
+
+
+1.2. pure function if it wants to modify the state, dont modify the original state rather than
+   take copy of that ,modifies that return .
+
+
+
+2.immutablity
+
+  dont modify original memory address, rather return new memory address
+
+
+3.all operators are based on builder /command chain /fluent pattern
+
+  operators return the same type again and again.
+
+ eg : strings
+  "hello".toString().trim().toUpper()..
+
+
+Operators:
+are classified into various category
+-create Stream
+-tranformation
+-filtering
+-coimbing
+-Error handling
+-utility 
+-conditional and boolean
+-mathmetical and aggregate
+-backpressue
+-connectable
+-converter
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+Lets create stream: -  Publisher ---push data ----subscriber--listens for data
+
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+public class CreateStream {
+    public static void main(String[] args) {
+        Observable<Integer> stream = Observable.create(subscriber -> {
+            //push data(data,error,complete) into stream , where consumer listens for data.
+            subscriber.onNext(12);
+            subscriber.onNext(23);
+         //   subscriber.onError(new RuntimeException("SOmething went wrong"));
+            subscriber.onNext(56);
+            subscriber.onNext(89);
+            subscriber.onComplete();
+            subscriber.onNext(999999);
+
+        });
+        //subscriber/observer/listener
+        stream.subscribe(data -> System.out.println(data), err -> System.out.println(err), () -> {
+            System.out.println("Done");
+        });
+    }
+
+}
+When stream is closed?
+
+-when ever error is thrown.
+-when ever oncomplete is called
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+
+------------------------------------------------------------------------------------------------------
+
+Data Source;
+
+1.primitive data types
+2.Objects
+3.List
+4.Array
+5.Future- java.util.concurrency
+
+
+operators to create Stream
+
+-create
+-just
+-range
+-fromIterable
+-fromArray
+-timer operators
+
+ package com.mycom;
+
+import io.reactivex.Observable;
+
+public class JustOperator {
+    public static void main(String[] args) {
+        Observable<Integer> stream = Observable.just(1, 2, 3, 4, 5);
+
+//        stream.subscribe(data -> System.out.println(data), err -> System.out.println(err), () -> {
+//            System.out.println("Done");
+//        });
+        stream.subscribe(System.out::println, System.out::println, () -> {
+            System.out.println("Done");
+        });
+    }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+import java.util.Arrays;
+import java.util.List;
+
+//List as Data source
+public class ListOperator {
+    public static void main(String[] args) {
+        List<Integer> list = Arrays.asList(1, 2, 3, 4, 5, 6);
+        Observable stream = Observable.fromIterable(list);
+        stream.subscribe(System.out::println, System.out::println, () -> {
+            System.out.println("Done");
+        });
+    }
+}
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+public class ArrayOperator {
+    public static void main(String[] args) {
+        Integer[] array = {1, 2, 3, 4, 5};
+        Observable stream = Observable.fromArray(array);
+        stream.subscribe(System.out::println, System.out::println, () -> {
+            System.out.println("Done");
+        });
+    }
+}
+
+
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+//i want to stream 1..1000
+public class RangeOperator {
+    public static void main(String[] args) {
+     Observable<Integer>  stream = Observable.range(1,100);
+        stream.subscribe(System.out::println, System.out::println, () -> {
+            System.out.println("Done");
+        });
+    }
+}
+///////////////////////////////////////////////////////////////////////////////////////
+
+Timer Related: i want to stream data based on cpu timer, lets every 1sec/ms i want to send a number to subscriber.
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+import java.util.concurrent.TimeUnit;
+
+public class IntervalOperator {
+    public static void main(String[] args) {
+        //sequence of number for every 1000ms
+        Observable<Long> stream = Observable.interval(1000, TimeUnit.MILLISECONDS);
+
+        System.out.println(Thread.currentThread().getName());
+        stream.subscribe(data->{
+            System.out.println(Thread.currentThread().getName());
+            System.out.println(data);
+        }, System.out::println, () -> {
+            System.out.println("Completed");
+        });
+        //pause main thread so that i can see data emission.
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException exception) {
+            exception.printStackTrace();
+        }
+    }
+}
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Data Processing:
+ -Transformation
+ -filtering
+ -logical conditions
+ -sorting
+
+Note: any operator(method) is based on two principles
+ -pure function
+ -immutablity 
+ -function composition - comining function - fn1().fn2()
+
+every operator returns the same type - eg Observable.fn()-->Observable-->fn2()
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+//Builder /fluent pattern
+
+public class MoreDeclarative {
+    public static void main(String[] args) {
+        Observable.just(1, 2, 3, 4, 5)
+        .subscribe(System.out::println, System.out::println, () -> {
+            System.out.println("Done");
+        });
+    }
+
+
+}
+
+Transformation:
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+public class Transformation {
+    public static void main(String[] args) {
+        Observable.range(1, 10)
+                .map(x -> 10 * x)
+                .map(y -> 2 * y)
+                .subscribe(System.out::println, System.out::println, () -> {
+                    System.out.println("Done");
+                });
+    }
+}
+
+package com.mycom;
+
+import io.reactivex.Observable;
+
+public class Filterating {
+    public static void main(String[] args) {
+        Observable.range(1, 100)
+                .filter(x -> x % 2 != 0)
+                .map(y -> y + 2)
+                .subscribe(System.out::println, System.out::println, () -> {
+                    System.out.println("Done");
+                });
+    }
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Types of streams:
+
+1.Up Stream
+2.Down Stream
+
+
+ if you want to understand this concept, Assembly Line Analogy:
+
+    Reactive Programs are thought as conveyor belt and work stations. The raw material pours from a source and ends up as fininished product ready to be pushed to the consumer.
+
+    work stations are implemented by Reactive Operators(methods), are connected via Stream Objects(Observable)
+
+Broad Casting
+Reactive Stream-Back Pressure
+Threading..
 
 
 
 
-
-
-
-
-
-
-
-
-
- 
 
 
 

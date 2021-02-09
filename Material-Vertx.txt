@@ -1415,20 +1415,546 @@ public class BufferMainVerticle  extends AbstractVerticle{
   }
 
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+JSON : Data interchange  staandard format, used in distributed computing to exchange data among software compoents.
+
+json features
+ - plain ascii string only.
+string to object and object to string  : json processing - all languages provides json parsers
+Jackson  is most popular  json parser for java.
+Vertx and spring internally uses Jackson  paraser only.
+
+io.vertx.core.json
+ provides json paraser apis
+Json	 
+ parser
+JsonArray	
+  A representation of a JSON array in Java.
+JsonObject	
+  A representation of a JSON object in Java.
 
 
+package com.example.myvertxapp;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+
+public class JSONMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(JSONMainVerticle.class);
+  }
+
+  //create json object
+  public void createJson(){
+    JsonObject profile = new JsonObject();
+    profile.put("id",1);
+    profile.put("name","Subramanian");
+    profile.put("city","Coimbatore");
+    //parsing
+    System.out.println(profile.encodePrettily());
+  }
+  public void createNestedJson(){
+    JsonObject profile = new JsonObject();
+    profile.put("id",1);
+    profile.put("name","Subramanian");
+    profile.put("city","Coimbatore");
+    JsonObject skills = new JsonObject();
+    skills.put("id","Java");
+    profile.put("skills",skills);
+    //parsing
+    System.out.println(profile.encodePrettily());
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    createJson();
+    createNestedJson();
+  }
+}
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Are you fluent?
+ fluent is a pattern to call methods on a object.
+if you want to call multiple methods on a object, or same method with different arg.
+
+"hello".trim().toUpperCase().toLowercase()-  fluent style
+
+fluent pattern is other called as builder pattern /command chain pattern.
+
+In Vertx , most of the api / 99% of the api been designed with fluent. it is recommended to use those patterns.
+
+public void createJsonFluent() {
+    JsonObject profile = new JsonObject()
+      .put("id", 1)
+      .put("name", "Subramanian")
+      .put("city", "coimbatore")
+      .put("skills", new JsonObject().put("skills", "Vertx"));
+    System.out.println(profile.encodePrettily());
+  }
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Json Array:
+...........
+
+  public void createJsonList() {
+    JsonArray list = new JsonArray()
+      .add(new JsonObject()
+        .put("id", 1)
+        .put("name", "Subramanian")
+        .put("city", "coimbatore")
+        .put("skills", new JsonObject().put("skills", "Vertx")))
+      .add(new JsonObject()
+        .put("id", 2)
+        .put("name", "Ram")
+        .put("city", "Chennai")
+        .put("skills", new JsonObject().put("skills", "Devops")));
+    System.out.println(list.encodePrettily());
+  }
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Merging json properties with existing json structure.
+
+  public void mergeJson(JsonObject jsonObject) {
+    JsonObject appConfig = new JsonObject()
+      .put("http.port", 8080)
+      .mergeIn(jsonObject);
+    System.out.println(appConfig.encodePrettily());
+
+  }
+    mergeJson(new JsonObject().put("http.port", 3000).put("http.host", "globallogic.com").put("http.ssl", true));
+/////////////////////////////////////////////////////////////////////////////////////////
+
+Future and JSON
 
 
+  public Future<JsonObject> sendingJsonViaFuture() {
+    Promise<JsonObject> promise = Promise.promise();
+    JsonObject profile = new JsonObject()
+      .put("id", 1)
+      .put("name", "Subramanian")
+      .put("city", "coimbatore")
+      .put("skills", new JsonObject().put("skills", "Vertx"));
+    promise.complete(profile);
+    return promise.future();
+  }
+  sendingJsonViaFuture().onSuccess(profile -> {
+      System.out.println(profile.encodePrettily());
+    });
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Vertx :
+  Non Blocking applications.
+  Non Blocking IO application.
+  NOn blocking networking applications - TCP/HTTP/DNS..
 
 
+Non blocking code can be written inside verticle or without verticle.
+all nonblocking tasks are handled by "event loop threads"
 
 
+In vertx most of actions are async, including deploying and undeploying verticles
+
+While deploying verticle ,void deployVerticle(String name,
+                    Handler<AsyncResult<String>> completionHandler)
 
 
+Every verticle has deployment id, using this we can undeploy the verticle.
 
 
+   vertx.deployVerticle(new TimersVerticle(), handler -> {
+      if (handler.succeeded()) {
+        System.out.println("TimersVerticle deployed successfully " + deploymentID());
+      }
+    });
 
 
+Vertx.Core Non blocking apis:
+
+Periodic and delayed actions:
+
+
+ package com.example.myvertxapp;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
+import io.vertx.example.util.Runner;
+
+class TimersVerticle extends AbstractVerticle {
+
+  public Future<JsonObject> delay(long delayTime) {
+    //callee
+//    vertx.setTimer(delayTime, handlerTime -> {
+//      System.out.println("Timeout");
+//    });
+    Promise<JsonObject> promise = Promise.promise();
+    vertx.setTimer(delayTime, handlerTime -> {
+      boolean isSuccess = true;
+      if (isSuccess) {
+        //  return Future.succeededFuture(new JsonObject().put("message", "Greetings to Non blocking"));
+        promise.complete(new JsonObject().put("message", "Greetings to Non blocking"));
+      } else {
+        //return Future.failedFuture(new RuntimeException(new JsonObject().put("message", "something went wrong").encodePrettily()));
+        promise.fail(new RuntimeException(new JsonObject().put("message", "something went wrong").encodePrettily()));
+      }
+    });
+    return promise.future();
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    super.start();
+    System.out.println("start");
+    //caller
+    delay(5000)
+      .onSuccess(message -> System.out.println(message.encodePrettily()))
+      .onFailure(error -> System.out.println(error.getCause()));
+    System.out.println("end");
+  }
+}
+
+
+public class TimersMainVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(TimersMainVerticle.class);
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    vertx.deployVerticle(new TimersVerticle(), handler -> {
+      if (handler.succeeded()) {
+        System.out.println("TimersVerticle deployed successfully " + deploymentID());
+      }
+    });
+  }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+Future,setPeriodic,Handler,Callback:
+.....................................
+
+  public void heartBeat(long timeout, Handler<AsyncResult<JsonObject>> aHandler) {
+    long timerId = vertx.setPeriodic(timeout, handler -> {
+      // System.out.println(new Date());
+      aHandler.handle(Future.succeededFuture(new JsonObject().put("now", new Date().toString())));
+    });
+    //logic to cancel timer
+    vertx.setTimer(10000, stopTimerId -> {
+      System.out.println("Stopping Heart Beat");
+      vertx.cancelTimer(timerId);
+    });
+  }
+    heartBeat(1000, handler -> {
+      if (handler.succeeded()) {
+        System.out.println(handler.result().encodePrettily());
+      }
+    });
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Without Verticle class how to write async/non blocking code? with plain java class.
+
+package com.example.myvertxapp;
+
+import io.vertx.core.Vertx;
+
+public class NonBlockingWithoutVerticle {
+  public static void main(String[] args) {
+    System.out.println("Plain Java app is running on " + Thread.currentThread().getName());
+    Vertx vertx = Vertx.vertx();
+
+    vertx.setPeriodic(1000, aHandler -> {
+      System.out.println("Periodic " + Thread.currentThread().getName());
+      // vertx.close();
+    });
+    //without verticle i am creating timer non blocking.
+    vertx.setTimer(5000, aHandler -> {
+      System.out.println("Timer : " +Thread.currentThread().getName());
+      // vertx.close();
+    });
+  }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+NonBlocking IO Application Developement:
+
+Generally in java all io apis are blocking.
+
+Types of IO Apps:
+
+1.file system IO
+2.Networking io - http.
+
+FileSystem:
+
+Vertx offers non blocking and blocking version of file operations.
+
+The non blocking versions take a handler(callback) which is called when the operation completes or an error occurs.
+
+The blocking versions are named xxxBlocking and return the results, or throw exceptions directly
+
+package com.example.myvertxapp;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.example.util.Runner;
+
+class FileOperations extends AbstractVerticle {
+
+  public Future<String> readFile() {
+    Promise<String> promise = Promise.promise();
+    String filePath = "hello.txt";
+    vertx.fileSystem().readFile(filePath, fileHandler -> {
+      if (fileHandler.succeeded()) {
+        // System.out.println("Read content: " + fileHandler.result());
+        promise.complete(fileHandler.result().toString());
+        //  promise.complete("fiel read is completed");
+      } else {
+        System.out.println("read failed");
+        promise.fail(fileHandler.cause());
+      }
+    });
+    return promise.future();
+  }
+
+  public Future<String> writeFile(String data) {
+    Promise<String> promise = Promise.promise();
+    String filePath = "greetings.txt";
+    //String filePath = "src/main/resources/write.txt";
+    vertx.fileSystem().writeFile(filePath, Buffer.buffer(data), fileHandler -> {
+      if (fileHandler.succeeded()) {
+        promise.complete("Write Operation is completed");
+      } else {
+        System.err.println("Error while writing in file: ");
+
+        promise.fail(fileHandler.cause());
+      }
+    });
+
+    return promise.future();
+  }
+  private Future<String> copyFile(String input) {
+    Future<String> future = Future.future();
+
+    // Retrieve a FileSystem object from vertx instance and call the
+    // non-blocking writeFile method
+    vertx.fileSystem().copy(input, "src/main/resources/example03/writecopy.txt", handler -> {
+      if (handler.succeeded()) {
+        System.out.println("Copy done of " + input);
+        future.complete("Copy success");
+      } else {
+        System.err.println("Error while copying a file: " + handler.cause().getMessage());
+        future.fail(handler.cause());
+      }
+    });
+
+    return future;
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    System.out.println("start");
+    readFile().onSuccess(result -> {
+      System.out.println(result);
+    }).onFailure(fileError -> {
+      System.out.println(fileError.getCause().getMessage());
+    });
+    vertx.setTimer(1000, handler -> {
+      System.out.println("Timer async");
+    });
+
+    writeFile("Hello how are you?").onSuccess(result -> {
+      System.out.println(result);
+    }).onFailure(fileError -> {
+      System.out.println(fileError.getCause().getMessage());
+    });
+
+    System.out.println("end");
+
+  }
+}
+
+
+public class FileSystemVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(FileSystemVerticle.class);
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    vertx.deployVerticle(new FileOperations());
+  }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+Types of IO :
+ -Non Streaming IO
+ -Streaming IO
+
+What is non streaming?
+
+ if you read file/write file, the entire file is loaded into vertx process mememory, then will
+be delivered to the caller.
+ if more files loaded into process memory, then which causes memory overflow, may slow down
+the other application process.
+ non streaming is not good for reading big files and files in network..
+
+eg:
+ vertx.fileSystem().readFile,writeFile,copy  methods are non stream methods.
+
+Streaming:
+
+  Streaming is nothing but io input source(file,network socket) is broken into smaller unit
+called "chunk".
+ chunk is part of while input source, will be delivered to called one by one.
+
+                          io.vertx.core.streams.StreamBase
+					|
+                    io.vertx.core.streams.ReadStream
+				|
+                    io.vertx.core.file.AsyncFile
+
+AsyncFile :
+  Enables streaming mode
+  Usefull for big files
+  Usefull for networking application
+
+Options Object:
+...............
+Most of Objects can be configured.
+
+Configuration:			
+ You can configure the entier vertx system using configuration echo system.
+
+Eg: if you come from spring background, how do you implement configuration
+Configuation Management System.
+ -XML,JavaConfig
+             ->Auto Configuration
+                           -->Boot
+Application configuration: How to supply data to application which is running/in production
+  -properties
+  -yaml
+
+Is there is any configuration techniquie to configure the objects via code.
+  very rare.
+
+Vertx supports lot of configuration management:
+ 
+1.Programmetic configuration - via Objects : Those Objects are called Configuration Objects
+  Object configure other objects.
+
+2.External Configuration : passing config data via fileSystem/Data Sources- properties,yaml
+  -ldap,redis......
+
+
+Programmetic Configuration:
+
+ Generally Programmetic Configuration objects are called as "Options Object"
+ XXXOptions
+
+eg:
+
+1.VertxOptions
+   Config Object to Configure Vertx Engine.
+2.DeploymentOptions
+   ConfigObject to Configure Verticles.
+3.FileSystemOptions
+   ConfigObject to Configure FileSystem
+4.OpenOptions
+   Describes how an AsyncFile should be opened.
+etc...
+  Like we have many more configuration objects....
+
+package com.example.myvertxapp;
+
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.file.AsyncFile;
+import io.vertx.core.file.OpenOptions;
+import io.vertx.example.util.Runner;
+
+public class StreamingVerticle extends AbstractVerticle {
+  public static void main(String[] args) {
+    Runner.runExample(StreamingVerticle.class);
+  }
+
+  @Override
+  public void start() throws Exception {
+    super.start();
+    OpenOptions opts = new OpenOptions().setRead(true);
+    vertx.fileSystem().open("big.file", opts, ar -> {
+      if (ar.succeeded()) {
+        System.out.println("File open");
+        //start reading file in streaming mode.
+        AsyncFile file = ar.result();
+        file.handler(System.out::println)
+          .exceptionHandler(Throwable::printStackTrace)
+          .endHandler(done -> {
+            System.out.println("\n--- DONE");
+            vertx.close();
+          });
+      } else {
+        System.out.println(ar.cause());
+      }
+    });
+
+  }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+Blocking Operations:
+....................
+
+Vertx is most pouplar for async programming:
+
+->Vertx uses dedicated threads who handles all non blocking operations
+
+vertx Engine components
+
+1.Non blocking operations Thread pool : Event loop pool threads
+
+2.Blocking operations thread pool : Worker Pool threads
+
+3.Event Queue
+
+4.Event loop thread
+ -Listens for events from Async operation threads,
+ -Assign event with handler(With Future/Promise) abstractions.
+How many event loop?
+ in node js, only one event loop.
+
+ Vertx has many event loops, based on no of cpu cores
+  lets say i have 12 core, 12 event loop will 
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Which operations are  blocking and which operations are non blocking?
+
+1.Based on verticles
+2.Based on blocking apis
+
+Gloden Rules:
+ Dont block event loop thread
+
+
+Verticles Types:
+................
+
+1.Standard Verticle
+  This is most common and usefull type.
+  Standard verticles are processed by event loop Thread
+  By default all verticles are event loop verticles
+
+2.Worker Verticle
+  It is verticle which is not processed by event loop any more, 
+  Worker verticles are handled by special threads "Worker pool threads".
 
 
 
